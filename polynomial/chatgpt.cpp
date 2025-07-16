@@ -5,8 +5,9 @@
 #include <map>
 #include <vector>
 
-using Poly = std::map<int, int, std::greater<int>>;                 // map variable key = coefficient, value = exponenet
+using Poly = std::map<int, int, std::greater<int>>;                 // map variable key = coefficient, value = exponent
 
+// parse each string into coefficient/exponent
 std::pair<int, int> Parse(const std::string& term) {
     std::string s = term;
     s.erase(remove(s.begin(), s.end(), ' '), s.end());              // strip whitespaces
@@ -92,29 +93,29 @@ Poly Multiply(const Poly& him, const Poly& her) {
 
 // Prints polynomials with full form
 std::string Print(const Poly& poly) {
-    std::ostringstream oss;
-    bool first = true;
+    std::ostringstream printStream;
+    bool isFirst = true;                                    // initial indicator
     for (const auto& [exp, coef] : poly) {
         if (coef == 0) continue;
 
-        if (!first) {
-            oss << (coef > 0 ? " + " : " - ");
+        if (!isFirst) {                                     // after initial term
+            printStream << (coef > 0 ? " + " : " - ");      // denote operator symbol +/-
         }
         else {
-            if (coef < 0) oss << "-";
-            first = false;
+            if (coef < 0) printStream << "-";               // initial term
+            isFirst = false;                                // turn off initial indicator
         }
 
-        int absCoef = abs(coef);
-        if (exp == 0) oss << absCoef;
+        int absCoef = abs(coef);                            // normalize coefficient since it already denote operator
+        if (exp == 0) printStream << absCoef;               // if exponent is 0 -> constant term
         else {
-            if (absCoef != 1) oss << absCoef;
-            oss << "x";
-            if (exp != 1) oss << "^" << exp;
+            if (absCoef != 1) printStream << absCoef;       // print coefficient except it is 1
+            printStream << "x";
+            if (exp != 1) printStream << "^" << exp;        // print exponent except it is 1
         }
     }
-    if (first) return "0"; // all zero
-    return oss.str();
+    if (isFirst) return "0";                                // if every component is 0, print out 0
+    return printStream.str();
 }
 
 int main() {
