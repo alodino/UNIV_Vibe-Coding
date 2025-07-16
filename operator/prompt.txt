@@ -1,0 +1,40 @@
+환경 설정
+사용할 언어, 자료구조, 알고리즘
+문제
+예제
+fault tolerance : 오류 처리
+
+This is an exercise of my university subject "Vibe Coding"
+
+1. Program in language "C++"
+2. Use "Stack" Structure with "Pop" and "Push" Algorithm
+3. Convert "Infix notation" to "Prefix Notation"
+4. Print Converted "Prefix Notation" and its calculation
+5. Detect errors and abort with message
+5-1. Errors to detect
+- Not supported operators such as "^", "%"
+- Divided by 0(Zero)
+- Input/Output exceeds the maximum limit of "double"
+- Not paired Brackets ("...(...", "...)...")
+6. Examples
+1+2*3/4
+(1+2)*3/4
+-1+2*3/(-4)
+(-1+2)*3/(-4)
+-(1+2*3/4)
+5/6/7/8
+-5/-6/-7/-8
+5*6*7*8
+-5-(+6)-(-7)+(-8)
+(5+6+7)/0
+
+2.5
+2.25
+-2.5
+-0.75
+-2.5
+0.0148809523809524
+0.0148809523809524
+1680
+-12
+divided by 0(Zero)
