@@ -4,200 +4,197 @@
 
 using namespace std;
 
-struct Node {
+struct KingNode {
     string name;
-    Node* parent;
-    Node* children[100];
-    int childCount;
+    KingNode* parent;
+    KingNode* firstChild;
+    KingNode* nextSibling;
+};
 
-    Node(const string& n) {
-        name = n;
-        parent = nullptr;
-        childCount = 0;
+class DynastyTree {
+private:
+    KingNode* root;
+    KingNode* kings[200]; // 최대 200명의 왕 가정
+    int kingCount;
+
+    KingNode* findKing(const string& name) {
+        for (int i = 0; i < kingCount; ++i) {
+            if (kings[i]->name == name) return kings[i];
+        }
+        return nullptr;
     }
 
-    void addChild(Node* child) {
-        children[childCount++] = child;
+    void addChild(KingNode* parent, KingNode* child) {
+        child->nextSibling = parent->firstChild;
+        parent->firstChild = child;
+    }
+
+    void printPreorder(KingNode* node) {
+        if (!node) return;
+        cout << node->name << endl;
+        printPreorder(node->firstChild);
+        printPreorder(node->nextSibling);
+    }
+
+    void printPostorder(KingNode* node) {
+        if (!node) return;
+        printPostorder(node->firstChild);
+        cout << node->name << endl;
+        printPostorder(node->nextSibling);
+    }
+
+    void findAllDescendants(KingNode* node) {
+        if (!node) return;
+        for (int i = 0; i < kingCount; ++i) {
+            KingNode* temp = kings[i];
+            KingNode* ancestor = temp->parent;
+            while (ancestor) {
+                if (ancestor == node) {
+                    cout << temp->name << endl;
+                    break;
+                }
+                ancestor = ancestor->parent;
+            }
+        }
+    }
+
+    void findDirectSonsWhoWereNotKings() {
+        for (int i = 0; i < kingCount; ++i) {
+            KingNode* p = kings[i];
+            bool hasKingChild = false;
+            for (int j = 0; j < kingCount; ++j) {
+                if (kings[j]->parent == p) {
+                    hasKingChild = true;
+                    break;
+                }
+            }
+            if (!hasKingChild) cout << p->name << endl;
+        }
+    }
+
+    int countKingChildren(KingNode* parent) {
+        int cnt = 0;
+        for (int i = 0; i < kingCount; ++i) {
+            if (kings[i]->parent == parent) ++cnt;
+        }
+        return cnt;
+    }
+
+    void findSiblingsWhoWereKings(KingNode* target) {
+        if (!target || !target->parent) return;
+        KingNode* sibling = target->parent->firstChild;
+        while (sibling) {
+            if (sibling != target) cout << sibling->name << endl;
+            sibling = sibling->nextSibling;
+        }
+    }
+
+    void printAncestors(KingNode* node) {
+        while (node->parent) {
+            cout << node->parent->name << endl;
+            node = node->parent;
+        }
+    }
+
+    int countKingsWith2OrMoreKingSons() {
+        int result = 0;
+        for (int i = 0; i < kingCount; ++i) {
+            if (countKingChildren(kings[i]) >= 2) ++result;
+        }
+        return result;
+    }
+
+    int countGenerations(KingNode* desc, KingNode* ancestor) {
+        int gen = 0;
+        while (desc && desc != ancestor) {
+            desc = desc->parent;
+            ++gen;
+        }
+        return (desc == ancestor) ? gen : -1;
+    }
+
+public:
+    DynastyTree() : root(nullptr), kingCount(0) {}
+
+    void loadFromFile(const string& filename) {
+        ifstream file(filename);
+        string line;
+        while (getline(file, line)) {
+            string child, parent;
+            size_t pos = line.find(' ');
+            if (pos == string::npos) {
+                child = line;
+                parent = "";
+            }
+            else {
+                child = line.substr(0, pos);
+                parent = line.substr(pos + 1);
+            }
+
+            KingNode* childNode = findKing(child);
+            if (!childNode) {
+                childNode = new KingNode{ child, nullptr, nullptr, nullptr };
+                kings[kingCount++] = childNode;
+            }
+
+            if (!parent.empty()) {
+                KingNode* parentNode = findKing(parent);
+                if (!parentNode) {
+                    parentNode = new KingNode{ parent, nullptr, nullptr, nullptr };
+                    kings[kingCount++] = parentNode;
+                }
+                childNode->parent = parentNode;
+                addChild(parentNode, childNode);
+            }
+            else {
+                root = childNode;
+            }
+        }
+    }
+
+    void answerQuestions() {
+        cout << "1. 조선의 왕을 순서대로 출력하시오:\n";
+        printPreorder(root);
+
+        cout << "\n2. 조선의 왕을 역순으로 출력하시오:\n";
+        printPostorder(root);
+
+        cout << "\n3. 조선의 왕은 모두 몇 명인가?\n" << kingCount << endl;
+
+        cout << "\n4. 조선의 왕 중에서 인조의 후손은 누구누구인가?\n";
+        findAllDescendants(findKing("인조"));
+
+        cout << "\n5. 직계 후손이 왕이 되지 못한 왕은 누구누구인가?\n";
+        findDirectSonsWhoWereNotKings();
+
+        cout << "\n6. 직계 후손이 왕이 된 수가 가장 많은 왕은 누구인가?\n";
+        string maxKing;
+        int maxChildren = 0;
+        for (int i = 0; i < kingCount; ++i) {
+            int cnt = countKingChildren(kings[i]);
+            if (cnt > maxChildren) {
+                maxChildren = cnt;
+                maxKing = kings[i]->name;
+            }
+        }
+        cout << maxKing << endl;
+
+        cout << "\n7. 정종의 형제로 조선의 왕이 된 사람은 누구인가?\n";
+        findSiblingsWhoWereKings(findKing("정종"));
+
+        cout << "\n8. 순종의 직계 선조를 모두 출력하시오:\n";
+        printAncestors(findKing("순종"));
+
+        cout << "\n9. 직계 후손이 2명 이상 왕이 된 왕은 몇 명인가?\n" << countKingsWith2OrMoreKingSons() << endl;
+
+        cout << "\n10. 예종은 태종의 몇 대 후손인가?\n";
+        cout << countGenerations(findKing("예종"), findKing("태종")) << endl;
     }
 };
 
-// 전역 변수
-Node* kings[200]; // 왕 이름 → 노드 포인터 저장용
-string kingNames[200]; // 이름들 순서 보존
-int kingCount = 0;
-
-Node* findNode(const string& name) {
-    for (int i = 0; i < kingCount; ++i) {
-        if (kings[i]->name == name) return kings[i];
-    }
-    return nullptr;
-}
-
-Node* createOrGetNode(const string& name) {
-    Node* node = findNode(name);
-    if (node != nullptr) return node;
-
-    Node* newNode = new Node(name);
-    kings[kingCount++] = newNode;
-    return newNode;
-}
-
-void readData() {
-    ifstream file("조선왕조.txt");
-    string child, parent;
-
-    while (file >> child) {
-        Node* childNode = createOrGetNode(child);
-
-        if (file.peek() == '\n' || file.eof()) {
-            continue; // 첫 줄: 태조 혼자
-        }
-
-        file >> parent;
-        Node* parentNode = createOrGetNode(parent);
-        childNode->parent = parentNode;
-        parentNode->addChild(childNode);
-    }
-}
-
-// 질문 1
-void printInOrder(Node* root) {
-    if (root == nullptr) return;
-    cout << root->name << '\n';
-    for (int i = 0; i < root->childCount; ++i) {
-        printInOrder(root->children[i]);
-    }
-}
-
-// 질문 2
-void printReverseOrder(Node* root) {
-    if (root == nullptr) return;
-    for (int i = root->childCount - 1; i >= 0; --i) {
-        printReverseOrder(root->children[i]);
-    }
-    cout << root->name << '\n';
-}
-
-// 질문 3
-int countAllKings() {
-    return kingCount;
-}
-
-// 질문 4
-void printDescendants(Node* root, const string& target) {
-    if (root == nullptr) return;
-    if (root->name == target) {
-        for (int i = 0; i < root->childCount; ++i) {
-            printInOrder(root->children[i]);
-        }
-        return;
-    }
-    for (int i = 0; i < root->childCount; ++i) {
-        printDescendants(root->children[i], target);
-    }
-}
-
-// 질문 5
-void printNoSuccessors() {
-    for (int i = 0; i < kingCount; ++i) {
-        bool hasKingChild = false;
-        for (int j = 0; j < kings[i]->childCount; ++j) {
-            if (findNode(kings[i]->children[j]->name)) {
-                hasKingChild = true;
-                break;
-            }
-        }
-        if (!hasKingChild) {
-            cout << kings[i]->name << '\n';
-        }
-    }
-}
-
-// 질문 6
-void kingWithMostSuccessors() {
-    int maxCount = 0;
-    string kingName;
-    for (int i = 0; i < kingCount; ++i) {
-        int count = 0;
-        for (int j = 0; j < kings[i]->childCount; ++j) {
-            if (findNode(kings[i]->children[j]->name)) {
-                count++;
-            }
-        }
-        if (count > maxCount) {
-            maxCount = count;
-            kingName = kings[i]->name;
-        }
-    }
-    cout << kingName << '\n';
-}
-
-// 질문 7
-void printSiblingsWhoBecameKings(const string& target) {
-    Node* node = findNode(target);
-    if (!node || !node->parent) return;
-    Node* father = node->parent;
-    for (int i = 0; i < father->childCount; ++i) {
-        if (father->children[i] != node &&
-            findNode(father->children[i]->name)) {
-            cout << father->children[i]->name << '\n';
-        }
-    }
-}
-
-// 질문 8
-void printAncestors(Node* node) {
-    if (node->parent == nullptr) return;
-    printAncestors(node->parent);
-    cout << node->parent->name << '\n';
-}
-
-// 질문 9
-int countKingsWith2OrMoreKingChildren() {
-    int count = 0;
-    for (int i = 0; i < kingCount; ++i) {
-        int kingChild = 0;
-        for (int j = 0; j < kings[i]->childCount; ++j) {
-            if (findNode(kings[i]->children[j]->name)) {
-                kingChild++;
-            }
-        }
-        if (kingChild >= 2) count++;
-    }
-    return count;
-}
-
-// 질문 10
-int generationGap(const string& ancestor, const string& descendant) {
-    Node* desc = findNode(descendant);
-    int count = 0;
-    while (desc && desc->name != ancestor) {
-        desc = desc->parent;
-        count++;
-    }
-    return (desc) ? count : -1;
-}
-
 int main() {
-    readData();
-
-    cout << "1. 순서대로 출력\n";
-    printInOrder(findNode("태조"));
-    cout << "\n2. 역순 출력\n";
-    printReverseOrder(findNode("태조"));
-    cout << "\n3. 왕 수: " << countAllKings() << '\n';
-    cout << "\n4. 인조의 후손:\n";
-    printDescendants(findNode("태조"), "인조");
-    cout << "\n5. 후계자 없는 왕:\n";
-    printNoSuccessors();
-    cout << "\n6. 직계 후손 가장 많은 왕:\n";
-    kingWithMostSuccessors();
-    cout << "\n7. 정종의 형제로 왕 된 사람:\n";
-    printSiblingsWhoBecameKings("정종");
-    cout << "\n8. 순종의 선조:\n";
-    printAncestors(findNode("순종"));
-    cout << "\n9. 2명 이상 후손 왕: " << countKingsWith2OrMoreKingChildren() << "명\n";
-    cout << "\n10. 예종은 태종의 " << generationGap("태종", "예종") << "대 후손\n";
-
+    DynastyTree tree;
+    tree.loadFromFile("조선왕조.txt");
+    tree.answerQuestions();
     return 0;
 }
